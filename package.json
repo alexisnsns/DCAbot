@@ -2,6 +2,7 @@
   "name": "defipendulum",
   "private": true,
   "scripts": {
+    "run": "node --import ./register-ts-node.mjs pendulum/defiPendulum.ts",
     "defiPendulum": "node --import ./register-ts-node.mjs pendulum/withdrawFluidMorpho.ts",
     "paraswap": "node --import ./register-ts-node.mjs pendulum/paraswap.ts",
     "test": "node --import ./register-ts-node.mjs utils/test.ts",

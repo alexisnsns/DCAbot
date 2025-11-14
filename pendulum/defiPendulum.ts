@@ -6,13 +6,18 @@ import { getUserMorphoPositions } from "./defiPositions/morphoPositions.js";
 import { getUserUSDCBalance } from "./utils/usdcBalancesCheck.js";
 
 // Actions
-import {
-  depositUSDCToFluidMorphoSingleChain,
-  depositUSDCToFluidMorphoCrossChain,
-} from "./depositFluidMorpho.js";
+// import {
+//   depositUSDCToFluidMorphoSingleChain,
+//   depositUSDCToFluidMorphoCrossChain,
+// } from "./depositFluidMorpho.js";
+
 import { withdrawUSDCFromFluidMorpho } from "./withdrawFluidMorpho.js";
+import { sendTransaction } from "./paraswap.js";
 
 ////////////////////////////////////////////////////////////
+
+const amount = 0.1;
+const chain = "ARBITRUM";
 
 const fetchDefiPositions = async () => {
   try {
@@ -36,15 +41,11 @@ const fetchDefiPositions = async () => {
 
 const optimize = async () => {
   try {
-    // Step 1: Fetch the pool with the highest APY
-    // Step 2: Fetch user's existing DeFi positions
-    const allDefiBalances = await fetchDefiPositions();
+    await withdrawUSDCFromFluidMorpho(amount.toString(), chain);
 
-    // Step 3: Check if any positions do not match the highest APY and withdraw
-    await withdrawUSDCFromFluidMorpho("1", "ARBITRUM");
+    console.log("--------------");
 
-    // console.log("--------------");
-
+    await sendTransaction(amount.toString());
     // console.log("--------------");
     // console.log("🎉 All good broski, yields are maximized.");
   } catch (error) {

@@ -18,7 +18,7 @@ const fetchApiUrl = "https://apiv5.paraswap.io/prices";
 const transactApiUrl = `https://apiv5.paraswap.io/transactions/42161`;
 
 // 1 USDC = "100000" (USDC has 6 decimals)
-const srcValue = "100000";
+// const srcValue = "100000";
 
 // USDC Contract
 const usdcContract = new ethers.Contract(_USDC.address, ABI, ARBITRUM_WALLET);
@@ -52,13 +52,13 @@ async function setAllowance(amount: number) {
   }
 }
 
-async function fetchPrice() {
+async function fetchPrice(amount: bigint) {
   const fetchParams = {
     srcToken: _USDC.address,
     srcDecimals: _USDC.decimals,
     destToken: _RETH.address,
     destDecimals: _RETH.decimals,
-    amount: srcValue, // "100000"
+    amount: amount, // "100000"
     side: "SELL",
     network: ARBITRUM_CHAIN_ID,
   };
@@ -88,9 +88,12 @@ async function fetchPrice() {
   }
 }
 
-async function buildTransaction() {
+async function buildTransaction(amount: string) {
+  const amountWei = ethers.parseUnits(amount, _USDC.decimals);
+
+  console.log("AMOUNT WEI", amountWei);
   try {
-    const priceRoute = await fetchPrice();
+    const priceRoute = await fetchPrice(amountWei);
     if (!priceRoute) {
       console.log("Cannot build tx: no priceRoute.");
       return null;
@@ -101,7 +104,7 @@ async function buildTransaction() {
       srcDecimals: _USDC.decimals,
       destToken: _RETH.address,
       destDecimals: _RETH.decimals,
-      srcAmount: srcValue,
+      srcAmount: amountWei.toString(),
       priceRoute,
       slippage: 50,
       userAddress: PUBLICKEY,
@@ -119,9 +122,9 @@ async function buildTransaction() {
   }
 }
 
-async function sendTransaction() {
+export async function sendTransaction(amount: string) {
   try {
-    const txParams = await buildTransaction();
+    const txParams = await buildTransaction(amount);
     if (!txParams) {
       console.log("No tx params. Aborting.");
       return;
@@ -148,6 +151,6 @@ async function sendTransaction() {
 }
 
 // await buildTransaction();
-await checkAllowance();
+// await checkAllowance();
 // await setAllowance(1);
 // await sendTransaction();

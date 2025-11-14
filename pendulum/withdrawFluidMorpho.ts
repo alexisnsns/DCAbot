@@ -39,20 +39,13 @@ export async function withdrawUSDCFromFluidMorpho(
     return;
   }
 
-  console.log("IN THERE");
   try {
     const withdrawAmount = ethers.parseUnits(amountToWithdraw, USDC_DECIMALS);
-
-    console.log(withdrawAmount);
-    console.log(FLUID_VAULT_ADDRESS_USDC_ARB);
-    console.log(_CHAIN_ID);
-    console.log("provider:", _PROVIDER);
-    console.log("chainname:", chainName);
 
     // Generate initial message for fee estimation
     const callData = await generateWithdrawCallDataFluid(withdrawAmount);
 
-    console.log("Generated CallData:", callData);
+    // console.log("Generated CallData:", callData);
 
     const txObject = await buildFinalTxObject(
       callData,
@@ -65,10 +58,11 @@ export async function withdrawUSDCFromFluidMorpho(
 
     const withdrawTx = await _SIGNER.sendTransaction(txObject);
     await withdrawTx.wait();
+    await withdrawTx.receipt();
     console.log("Withdrew", amountToWithdraw, "USDC from", chainName);
   } catch (error) {
     console.error("Error in withdraw process:", error);
   }
 }
 
-withdrawUSDCFromFluidMorpho("1", "ARBITRUM");
+// withdrawUSDCFromFluidMorpho("1", "ARBITRUM");
