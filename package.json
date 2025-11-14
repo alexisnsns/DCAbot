@@ -2,7 +2,7 @@
   "name": "defipendulum",
   "private": true,
   "scripts": {
-    "defiPendulum": "node --import ./register-ts-node.mjs pendulum/defiPendulum.ts",
+    "defiPendulum": "node --import ./register-ts-node.mjs pendulum/withdrawFluidMorpho.ts",
     "test": "node --import ./register-ts-node.mjs utils/test.ts",
     "dangle": "node --import ./register-ts-node.mjs angle/depositAngle.ts",
     "wangle": "node --import ./register-ts-node.mjs angle/withdrawAngle.ts",

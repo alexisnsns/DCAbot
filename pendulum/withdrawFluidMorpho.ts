@@ -7,6 +7,7 @@ import {
   USDC_DECIMALS,
   FLUID_MORPHO_POOL_ADDRESSES,
   CHAIN_IDS,
+  FLUID_VAULT_ADDRESS_USDC_ARB,
 } from "../utils/resources.js";
 import { getUserNativeUSDValuesSingleChain } from "./utils/gasCheck.js";
 
@@ -21,17 +22,12 @@ import { providers, wallets } from "../utils/ethersUtils.js";
 
 export async function withdrawUSDCFromFluidMorpho(
   amountToWithdraw: string,
-  chainName: string,
-  ID?: string
+  chainName: string
 ) {
   const _CHAIN_ID = CHAIN_IDS[chainName.toUpperCase()];
 
   const _SIGNER = wallets[chainName.toUpperCase()];
   const _PROVIDER = providers[chainName.toUpperCase()];
-  const suffix = ID ? `_${ID}` : "_"; // fallback to just underscore if no ID
-
-  const _POOL_ADDRESS =
-    FLUID_MORPHO_POOL_ADDRESSES[chainName.toUpperCase() + suffix];
 
   const gasValue = await getUserNativeUSDValuesSingleChain(chainName);
   if (gasValue < 0.1) {
@@ -43,28 +39,29 @@ export async function withdrawUSDCFromFluidMorpho(
     return;
   }
 
+  console.log("IN THERE");
   try {
     const withdrawAmount = ethers.parseUnits(amountToWithdraw, USDC_DECIMALS);
 
-    // console.log(withdrawAmount);
-    // console.log(_POOL_ADDRESS);
-    // console.log(_CHAIN_ID);
-    // console.log('provider:', _PROVIDER);
-    // console.log('chainname:', chainName);
+    console.log(withdrawAmount);
+    console.log(FLUID_VAULT_ADDRESS_USDC_ARB);
+    console.log(_CHAIN_ID);
+    console.log("provider:", _PROVIDER);
+    console.log("chainname:", chainName);
 
     // Generate initial message for fee estimation
     const callData = await generateWithdrawCallDataFluid(withdrawAmount);
 
-    // console.log("Generated CallData:", callData);
+    console.log("Generated CallData:", callData);
 
     const txObject = await buildFinalTxObject(
       callData,
       _CHAIN_ID,
-      _POOL_ADDRESS,
+      FLUID_VAULT_ADDRESS_USDC_ARB,
       _PROVIDER
     );
 
-    // console.log("Sending withdraw transaction...");
+    console.log("Sending withdraw transaction...");
 
     const withdrawTx = await _SIGNER.sendTransaction(txObject);
     await withdrawTx.wait();
@@ -74,5 +71,4 @@ export async function withdrawUSDCFromFluidMorpho(
   }
 }
 
-// const amount = ethers.formatUnits("6586337", USDC_DECIMALS);
-// withdrawUSDCFromFluid(amount, "POLYGON");
+withdrawUSDCFromFluidMorpho("1", "ARBITRUM");
