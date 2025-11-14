@@ -1,17 +1,17 @@
 import axios from "axios";
-import crypto from "crypto";
 import { ethers } from "ethers";
-import { _USDC, _RETH, PROXYTRANSFER, PUBLICKEY } from "../utils/resources.js";
+import {
+  _USDC,
+  _RETH,
+  PROXYTRANSFER,
+  PUBLICKEY,
+  ARBITRUM_CHAIN_ID,
+} from "../utils/resources.js";
 import { ARBITRUM_PROVIDER, ARBITRUM_WALLET } from "../utils/ethersUtils.js";
 import fs from "fs";
 const ABI = JSON.parse(
   fs.readFileSync(new URL("../abi.json", import.meta.url), "utf8")
 );
-
-interface IERC20 extends ethers.BaseContract {
-  approve(spender: string, amount: bigint): Promise<ethers.TransactionResponse>;
-  allowance(owner: string, spender: string): Promise<bigint>;
-}
 
 // Paraswap
 const fetchApiUrl = "https://apiv5.paraswap.io/prices";
@@ -21,11 +21,7 @@ const transactApiUrl = `https://apiv5.paraswap.io/transactions/42161`;
 const srcValue = "100000";
 
 // USDC Contract
-const usdcContract = new ethers.Contract(
-  _USDC.address,
-  ABI,
-  ARBITRUM_PROVIDER
-) as unknown as IERC20;
+const usdcContract = new ethers.Contract(_USDC.address, ABI, ARBITRUM_WALLET);
 
 async function checkAllowance() {
   try {
@@ -38,14 +34,6 @@ async function checkAllowance() {
 }
 
 async function setAllowance(amount: number) {
-  const usdcContract = new ethers.Contract(
-    "0xaf88d065e77c8cC2239327C5EDb3A432268e5831",
-    ABI,
-    ARBITRUM_WALLET
-  );
-
-  console.log("INTHERE!!");
-
   const amountToApprove = ethers.parseUnits(amount.toString(), _USDC.decimals);
 
   console.log(
@@ -72,7 +60,7 @@ async function fetchPrice() {
     destDecimals: _RETH.decimals,
     amount: srcValue, // "100000"
     side: "SELL",
-    network: "42161",
+    network: ARBITRUM_CHAIN_ID,
   };
 
   try {
@@ -160,6 +148,6 @@ async function sendTransaction() {
 }
 
 // await buildTransaction();
-// await checkAllowance()
+await checkAllowance();
 // await setAllowance(1);
-await sendTransaction();
+// await sendTransaction();
