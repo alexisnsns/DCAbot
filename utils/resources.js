@@ -176,6 +176,6 @@ export const _RETH = {
 
 export const PUBLICKEY = "0xe19c88086C8d551C81ff8a3e2c5DF87a88110a51";
 
-export const PROXYTRANSFER = "0x93aAAe79a53759cD164340E4C8766E4Db5331cD7";
+export const PROXYTRANSFER = "0x216b4b4ba9f3e719726886d34a177484278bfcae";
 
 export const ARBITRUM_PROVIDER = new ethers.JsonRpcProvider(ARBITRUM_RPC_URL);

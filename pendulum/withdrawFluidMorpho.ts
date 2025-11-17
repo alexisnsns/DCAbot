@@ -58,7 +58,6 @@ export async function withdrawUSDCFromFluidMorpho(
 
     const withdrawTx = await _SIGNER.sendTransaction(txObject);
     await withdrawTx.wait();
-    await withdrawTx.receipt();
     console.log("Withdrew", amountToWithdraw, "USDC from", chainName);
   } catch (error) {
     console.error("Error in withdraw process:", error);

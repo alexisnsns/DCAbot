@@ -16,28 +16,28 @@ import { sendTransaction } from "./paraswap.js";
 
 ////////////////////////////////////////////////////////////
 
-const amount = 0.1;
+const amount = 0.48;
 const chain = "ARBITRUM";
 
-const fetchDefiPositions = async () => {
-  try {
-    const userFluidBalances = await getUserFluidPositions();
-    const userMorphoBalances = await getUserMorphoPositions();
+// const fetchDefiPositions = async () => {
+//   try {
+//     const userFluidBalances = await getUserFluidPositions();
+//     const userMorphoBalances = await getUserMorphoPositions();
 
-    const allDefiBalances = [...userFluidBalances, ...userMorphoBalances];
-    console.log("Current position:");
-    for (const { chain, balance, ID } of allDefiBalances) {
-      if (Number(balance) > 0.1) {
-        const poolLabel = ID ? ` (Pool ${ID})` : "";
-        console.log(`${chain}${poolLabel}: ${Number(balance).toFixed(2)} USDC`);
-      }
-    }
-    return allDefiBalances;
-  } catch (error) {
-    console.log("error fetching defi positions", error);
-    return;
-  }
-};
+//     const allDefiBalances = [...userFluidBalances, ...userMorphoBalances];
+//     console.log("Current position:");
+//     for (const { chain, balance, ID } of allDefiBalances) {
+//       if (Number(balance) > 0.1) {
+//         const poolLabel = ID ? ` (Pool ${ID})` : "";
+//         console.log(`${chain}${poolLabel}: ${Number(balance).toFixed(2)} USDC`);
+//       }
+//     }
+//     return allDefiBalances;
+//   } catch (error) {
+//     console.log("error fetching defi positions", error);
+//     return;
+//   }
+// };
 
 const optimize = async () => {
   try {
@@ -47,7 +47,7 @@ const optimize = async () => {
 
     await sendTransaction(amount.toString());
     // console.log("--------------");
-    // console.log("🎉 All good broski, yields are maximized.");
+    console.log("🎉 All good broski, DCA is done-zo.");
   } catch (error) {
     console.error("Error:", error);
   }

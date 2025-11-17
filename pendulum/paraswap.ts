@@ -23,34 +23,34 @@ const transactApiUrl = `https://apiv5.paraswap.io/transactions/42161`;
 // USDC Contract
 const usdcContract = new ethers.Contract(_USDC.address, ABI, ARBITRUM_WALLET);
 
-async function checkAllowance() {
-  try {
-    console.log("checking allowance:");
-    const allowance = await usdcContract.allowance(PUBLICKEY, PROXYTRANSFER);
-    console.log(`Allowance for spender from owner is: ${allowance}`);
-  } catch (error) {
-    console.error("Error fetching allowance:", error);
-  }
-}
+// async function checkAllowance() {
+//   try {
+//     console.log("checking allowance:");
+//     const allowance = await usdcContract.allowance(PUBLICKEY, PROXYTRANSFER);
+//     console.log(`Allowance for spender from owner is: ${allowance}`);
+//   } catch (error) {
+//     console.error("Error fetching allowance:", error);
+//   }
+// }
 
-async function setAllowance(amount: number) {
-  const amountToApprove = ethers.parseUnits(amount.toString(), _USDC.decimals);
+// async function setAllowance(amount: number) {
+//   const amountToApprove = ethers.parseUnits(amount.toString(), _USDC.decimals);
 
-  console.log(
-    `Setting allowance for ${PROXYTRANSFER} to spend ${amount} tokens...`
-  );
+//   console.log(
+//     `Setting allowance for ${PROXYTRANSFER} to spend ${amount} tokens...`
+//   );
 
-  try {
-    const tx = await usdcContract.approve(PROXYTRANSFER, amountToApprove);
+//   try {
+//     const tx = await usdcContract.approve(PROXYTRANSFER, amountToApprove);
 
-    console.log(`Approval transaction sent: ${tx.hash}`);
+//     console.log(`Approval transaction sent: ${tx.hash}`);
 
-    await tx.wait();
-    console.log("Allowance set successfully.");
-  } catch (error) {
-    console.error("Error setting allowance:", error);
-  }
-}
+//     await tx.wait();
+//     console.log("Allowance set successfully.");
+//   } catch (error) {
+//     console.error("Error setting allowance:", error);
+//   }
+// }
 
 async function fetchPrice(amount: bigint) {
   const fetchParams = {
@@ -91,33 +91,67 @@ async function fetchPrice(amount: bigint) {
 async function buildTransaction(amount: string) {
   const amountWei = ethers.parseUnits(amount, _USDC.decimals);
 
-  console.log("AMOUNT WEI", amountWei);
+  console.log("Amount to swap:", amountWei.toString());
+
+  //
+  // 0. Check Allowance
+  //
+  const currentAllowance: bigint = await usdcContract.allowance(
+    PUBLICKEY,
+    PROXYTRANSFER
+  );
+
+  console.log("Current allowance:", currentAllowance.toString());
+
+  if (currentAllowance < amountWei) {
+    console.log(
+      `Allowance too low. Need ${amountWei}, have ${currentAllowance}. Approving...`
+    );
+
+    const approveTx = await usdcContract.approve(PROXYTRANSFER, amountWei);
+    console.log("Approval tx:", approveTx.hash);
+
+    await approveTx.wait();
+    console.log("Approval confirmed.");
+  } else {
+    console.log("Sufficient allowance. No approval needed.");
+  }
+
+  //
+  // 1. Fetch Paraswap price route
+  //
+  const priceRoute = await fetchPrice(amountWei);
+  if (!priceRoute) {
+    console.log("Cannot build tx: no priceRoute.");
+    return null;
+  }
+
+  //
+  // 2. Build Paraswap transaction
+  //
+  const txParams = {
+    srcToken: _USDC.address,
+    srcDecimals: _USDC.decimals,
+    destToken: _RETH.address,
+    destDecimals: _RETH.decimals,
+    srcAmount: amountWei.toString(),
+    priceRoute,
+    slippage: 50,
+    userAddress: PUBLICKEY,
+  };
+
+  const block = await ARBITRUM_PROVIDER.getBlock("latest");
+  const baseFee = block.baseFeePerGas;
+
   try {
-    const priceRoute = await fetchPrice(amountWei);
-    if (!priceRoute) {
-      console.log("Cannot build tx: no priceRoute.");
-      return null;
-    }
-
-    const txParams = {
-      srcToken: _USDC.address,
-      srcDecimals: _USDC.decimals,
-      destToken: _RETH.address,
-      destDecimals: _RETH.decimals,
-      srcAmount: amountWei.toString(),
-      priceRoute,
-      slippage: 50,
-      userAddress: PUBLICKEY,
-    };
-
     const response = await axios.post(transactApiUrl, txParams, {
-      params: { gasPrice: "100" },
+      params: { gasPrice: baseFee },
     });
 
-    console.log("Transaction Data:", response.data);
+    // console.log("Paraswap tx data:", response.data);
     return response.data;
   } catch (error) {
-    console.error("Error building transaction:", error);
+    console.error("Error calling Paraswap /transactions:", error);
     return null;
   }
 }
@@ -137,7 +171,8 @@ export async function sendTransaction(amount: string) {
       data: txParams.data,
       value: 0n,
       gasLimit: BigInt(txParams.gas),
-      gasPrice: feeData.gasPrice ?? 0n, // correct for ethers v6
+      maxFeePerGas: feeData.maxFeePerGas ?? 0n,
+      maxPriorityFeePerGas: feeData.maxPriorityFeePerGas ?? 0n,
     };
 
     const txResponse = await ARBITRUM_WALLET.sendTransaction(txDetails);
