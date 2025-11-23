@@ -14,6 +14,12 @@ const ABI = JSON.parse(
   fs.readFileSync(new URL("../abi.json", import.meta.url), "utf8")
 );
 
+export type Token = {
+  address: string;
+  decimals: number;
+  symbol: string;
+};
+
 // Paraswap
 const fetchApiUrl = "https://apiv5.paraswap.io/prices";
 const transactApiUrl = `https://apiv5.paraswap.io/transactions/42161`;
@@ -21,12 +27,12 @@ const transactApiUrl = `https://apiv5.paraswap.io/transactions/42161`;
 // USDC Contract
 const usdcContract = new ethers.Contract(_USDC.address, ABI, ARBITRUM_WALLET);
 
-async function fetchPrice(amount: bigint) {
+async function fetchPrice(amount: bigint, destToken: Token) {
   const fetchParams = {
     srcToken: _USDC.address,
     srcDecimals: _USDC.decimals,
-    destToken: _AAVE.address,
-    destDecimals: _AAVE.decimals,
+    destToken: destToken.address,
+    destDecimals: destToken.decimals,
     amount: amount, // "100000"
     side: "SELL",
     network: ARBITRUM_CHAIN_ID,
@@ -46,7 +52,7 @@ async function fetchPrice(amount: bigint) {
     );
 
     console.log(
-      `Paraswap quote: ${srcAmountHuman} ${_USDC.symbol} → ${destAmountHuman} ${_AAVE.symbol}`
+      `Paraswap quote: ${srcAmountHuman} ${_USDC.symbol} → ${destAmountHuman} ${destToken.symbol}`
     );
 
     console.log("Gas USD cost:", response.data.priceRoute.gasCostUSD);
@@ -57,7 +63,7 @@ async function fetchPrice(amount: bigint) {
   }
 }
 
-async function buildTransaction(amount: string) {
+async function buildTransaction(amount: string, destToken: Token) {
   const amountWei = ethers.parseUnits(amount, _USDC.decimals);
 
   console.log("Amount to swap:", amountWei.toString());
@@ -89,7 +95,7 @@ async function buildTransaction(amount: string) {
   //
   // 1. Fetch Paraswap price route
   //
-  const priceRoute = await fetchPrice(amountWei);
+  const priceRoute = await fetchPrice(amountWei, destToken);
   if (!priceRoute) {
     console.log("Cannot build tx: no priceRoute.");
     throw Error;
@@ -116,8 +122,8 @@ async function buildTransaction(amount: string) {
   const txParams = {
     srcToken: _USDC.address,
     srcDecimals: _USDC.decimals,
-    destToken: _AAVE.address,
-    destDecimals: _AAVE.decimals,
+    destToken: destToken.address,
+    destDecimals: destToken.decimals,
     srcAmount: amountWei.toString(),
     priceRoute,
     slippage: 50,
@@ -142,9 +148,9 @@ async function buildTransaction(amount: string) {
   }
 }
 
-export async function sendTransaction(amount: string) {
+export async function sendTransaction(amount: string, destToken: Token) {
   try {
-    const txParams = await buildTransaction(amount);
+    const txParams = await buildTransaction(amount, destToken);
     if (!txParams) {
       console.log("No tx params. Aborting.");
       return;
