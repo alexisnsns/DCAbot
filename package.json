@@ -2,20 +2,13 @@
   "name": "dcabot",
   "private": true,
   "scripts": {
-    "run": "node --import ./register-ts-node.mjs dcabot/DCAbot.ts",
+    "dca": "node --import ./register-ts-node.mjs dcabot/DCAbot.ts",
     "positions": "node --import ./register-ts-node.mjs dcabot/defiPositions/fluidPositions.ts",
     "usdcbalance": "node --import ./register-ts-node.mjs dcabot/utils/usdcBalancesCheck.ts",
     "withdraw": "node --import ./register-ts-node.mjs dcabot/withdrawFluidMorpho.ts",
-    "paraswap": "node --import ./register-ts-node.mjs dcabot/paraswap.ts",
-    "test": "node --import ./register-ts-node.mjs utils/test.ts",
-    "dangle": "node --import ./register-ts-node.mjs angle/depositAngle.ts",
-    "wangle": "node --import ./register-ts-node.mjs angle/withdrawAngle.ts",
-    "cangle": "node --import ./register-ts-node.mjs angle/crossDepositAngle.ts",
-    "angleAPY": "node --import ./register-ts-node.mjs angle/angleAPY.ts"
+    "paraswap": "node --import ./register-ts-node.mjs dcabot/paraswap.ts"
   },
   "dependencies": {
-    "@aws-sdk/client-secrets-manager": "^3.799.0",
-    "aws-sdk": "^2.1692.0",
     "axios": "^1.8.3",
     "bignumber.js": "^9.1.2",
     "dotenv": "^16.3.1",

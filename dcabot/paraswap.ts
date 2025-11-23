@@ -1,5 +1,7 @@
 import axios from "axios";
 import { ethers } from "ethers";
+import fs from "fs";
+
 import {
   _USDC,
   _RETH,
@@ -8,32 +10,57 @@ import {
   PUBLICKEY,
   ARBITRUM_CHAIN_ID,
 } from "../utils/resources.js";
+
 import { ARBITRUM_PROVIDER, ARBITRUM_WALLET } from "../utils/ethersUtils.js";
-import fs from "fs";
+
 const ABI = JSON.parse(
   fs.readFileSync(new URL("../abi.json", import.meta.url), "utf8")
 );
 
-export type Token = {
-  address: string;
-  decimals: number;
-  symbol: string;
-};
-
-// Paraswap
+// Paraswap endpoints
 const fetchApiUrl = "https://apiv5.paraswap.io/prices";
 const transactApiUrl = `https://apiv5.paraswap.io/transactions/42161`;
 
 // USDC Contract
 const usdcContract = new ethers.Contract(_USDC.address, ABI, ARBITRUM_WALLET);
 
+// Token type
+export type Token = {
+  address: string;
+  decimals: number;
+  symbol: string;
+};
+
+// Slice allocation type
+export type TokenAllocation = {
+  token: Token;
+  percentage: number; // 0-100
+};
+
+// ----------------------------
+// 1. Compute allocations
+// ----------------------------
+function computeAllocations(
+  totalAmount: string,
+  allocations: TokenAllocation[]
+) {
+  const total = Number(totalAmount);
+  return allocations.map(({ token, percentage }) => ({
+    token,
+    amount: (total * (percentage / 100)).toFixed(6), // string
+  }));
+}
+
+// ----------------------------
+// 2. Fetch Paraswap price
+// ----------------------------
 async function fetchPrice(amount: bigint, destToken: Token) {
   const fetchParams = {
     srcToken: _USDC.address,
     srcDecimals: _USDC.decimals,
     destToken: destToken.address,
     destDecimals: destToken.decimals,
-    amount: amount, // "100000"
+    amount: amount.toString(),
     side: "SELL",
     network: ARBITRUM_CHAIN_ID,
   };
@@ -41,11 +68,7 @@ async function fetchPrice(amount: bigint, destToken: Token) {
   try {
     const response = await axios.get(fetchApiUrl, { params: fetchParams });
 
-    const srcAmountHuman = ethers.formatUnits(
-      BigInt(fetchParams.amount),
-      fetchParams.srcDecimals
-    );
-
+    const srcAmountHuman = ethers.formatUnits(amount, _USDC.decimals);
     const destAmountHuman = ethers.formatUnits(
       BigInt(response.data.priceRoute.destAmount),
       response.data.priceRoute.destDecimals
@@ -60,65 +83,58 @@ async function fetchPrice(amount: bigint, destToken: Token) {
     return response.data.priceRoute;
   } catch (error) {
     console.error("Error fetching price:", error);
+    throw error;
   }
 }
 
+// ----------------------------
+// 3. Build tx for a single token
+// ----------------------------
 async function buildTransaction(amount: string, destToken: Token) {
   const amountWei = ethers.parseUnits(amount, _USDC.decimals);
 
   console.log("Amount to swap:", amountWei.toString());
 
-  //
-  // 0. Check Allowance
-  //
+  // 0. Check allowance
   const currentAllowance: bigint = await usdcContract.allowance(
     PUBLICKEY,
     PROXYTRANSFER
   );
-
   console.log("Current allowance:", currentAllowance.toString());
 
   if (currentAllowance < amountWei) {
     console.log(
       `Allowance too low. Need ${amountWei}, have ${currentAllowance}. Approving...`
     );
-
     const approveTx = await usdcContract.approve(PROXYTRANSFER, amountWei);
     console.log("Approval tx:", approveTx.hash);
-
     await approveTx.wait();
     console.log("Approval confirmed.");
   } else {
     console.log("Sufficient allowance. No approval needed.");
   }
 
-  //
-  // 1. Fetch Paraswap price route
-  //
+  // 1. Fetch price route
   const priceRoute = await fetchPrice(amountWei, destToken);
   if (!priceRoute) {
     console.log("Cannot build tx: no priceRoute.");
-    throw Error;
+    throw new Error("No price route");
   }
 
-  // console.log(priceRoute);
-
+  // 2. Price impact check
   const srcUSD = Number(priceRoute.srcUSD);
   const destUSD = Number(priceRoute.destUSD);
-
   const diff = (destUSD - srcUSD) / srcUSD;
 
   console.log(
-    `Src: ${srcUSD}, Dest: ${destUSD}, final diff: ${diff.toFixed(6)} %`
+    `Src: ${srcUSD}, Dest: ${destUSD}, final diff: ${diff.toFixed(6)}%`
   );
   if (diff < -0.01) {
     console.log("❌ Price impact too high. Abort tx.");
-    throw Error;
+    throw new Error("Price impact too high");
   }
 
-  //
-  // 2. Build Paraswap transaction
-  //
+  // 3. Build transaction
   const txParams = {
     srcToken: _USDC.address,
     srcDecimals: _USDC.decimals,
@@ -126,10 +142,8 @@ async function buildTransaction(amount: string, destToken: Token) {
     destDecimals: destToken.decimals,
     srcAmount: amountWei.toString(),
     priceRoute,
-    slippage: 50,
+    slippage: 50, // 0.5% slippage
     userAddress: PUBLICKEY,
-    // TODO: REMOVE THESE FLAGS IN PRODUCTION
-    // ignoreChecks: true,
   };
 
   const block = await ARBITRUM_PROVIDER.getBlock("latest");
@@ -139,8 +153,6 @@ async function buildTransaction(amount: string, destToken: Token) {
     const response = await axios.post(transactApiUrl, txParams, {
       params: { gasPrice: baseFee },
     });
-
-    // console.log("Paraswap tx data:", response.data);
     return response.data;
   } catch (error) {
     console.error("Error calling Paraswap /transactions:", error);
@@ -148,6 +160,9 @@ async function buildTransaction(amount: string, destToken: Token) {
   }
 }
 
+// ----------------------------
+// 4. Send tx for a single token
+// ----------------------------
 export async function sendTransaction(amount: string, destToken: Token) {
   try {
     const txParams = await buildTransaction(amount, destToken);
@@ -177,7 +192,17 @@ export async function sendTransaction(amount: string, destToken: Token) {
   }
 }
 
-// await buildTransaction("0.1");
-// await checkAllowance();
-// await setAllowance(1);
-// await sendTransaction();
+// ----------------------------
+// 5. Swap USDC by ratio
+// ----------------------------
+export async function swapUSDCByRatio(
+  totalAmount: string,
+  allocations: TokenAllocation[]
+) {
+  const slices = computeAllocations(totalAmount, allocations);
+
+  for (const slice of slices) {
+    console.log(`\nSwapping ${slice.amount} USDC → ${slice.token.symbol}`);
+    await sendTransaction(slice.amount, slice.token);
+  }
+}
