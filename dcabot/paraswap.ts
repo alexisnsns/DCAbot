@@ -77,7 +77,7 @@ async function fetchPrice(amount: bigint) {
     );
 
     console.log(
-      `Paraswap: ${srcAmountHuman} ${_USDC.symbol} → ${destAmountHuman} ${_RETH.symbol}`
+      `Paraswap quote: ${srcAmountHuman} ${_USDC.symbol} → ${destAmountHuman} ${_RETH.symbol}`
     );
 
     console.log("Gas USD cost:", response.data.priceRoute.gasCostUSD);
@@ -123,7 +123,22 @@ async function buildTransaction(amount: string) {
   const priceRoute = await fetchPrice(amountWei);
   if (!priceRoute) {
     console.log("Cannot build tx: no priceRoute.");
-    return null;
+    throw Error;
+  }
+
+  // console.log(priceRoute);
+
+  const srcUSD = Number(priceRoute.srcUSD);
+  const destUSD = Number(priceRoute.destUSD);
+
+  const diff = (destUSD - srcUSD) / srcUSD;
+
+  console.log(
+    `Src: ${srcUSD}, Dest: ${destUSD}, final diff: ${diff.toFixed(6)} $`
+  );
+  if (diff < -0.01) {
+    console.log("❌ Price impact too high. Abort tx.");
+    throw Error;
   }
 
   //
@@ -138,6 +153,8 @@ async function buildTransaction(amount: string) {
     priceRoute,
     slippage: 50,
     userAddress: PUBLICKEY,
+    // TODO: REMOVE THESE FLAGS IN PRODUCTION
+    // ignoreChecks: true,
   };
 
   const block = await ARBITRUM_PROVIDER.getBlock("latest");
@@ -185,7 +202,7 @@ export async function sendTransaction(amount: string) {
   }
 }
 
-// await buildTransaction();
+// await buildTransaction("0.1");
 // await checkAllowance();
 // await setAllowance(1);
 // await sendTransaction();

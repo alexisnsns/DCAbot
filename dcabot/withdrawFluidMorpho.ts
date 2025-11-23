@@ -10,7 +10,6 @@ import {
   FLUID_VAULT_ADDRESS_USDC_ARB,
 } from "../utils/resources.js";
 import { getUserNativeUSDValuesSingleChain } from "./utils/gasCheck.js";
-
 import {
   buildFinalTxObject,
   generateWithdrawCallDataFluid,
@@ -58,7 +57,7 @@ export async function withdrawUSDCFromFluidMorpho(
 
     const withdrawTx = await _SIGNER.sendTransaction(txObject);
     await withdrawTx.wait();
-    console.log("Withdrew", amountToWithdraw, "USDC from", chainName);
+    console.log("Withdrew", amountToWithdraw, "USDC from Fluid");
   } catch (error) {
     console.error("Error in withdraw process:", error);
   }
