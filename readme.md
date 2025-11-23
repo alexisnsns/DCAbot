@@ -1,4 +1,4 @@
-DeFi DCA tool
+DeFi Dollar Cost Averaging (DCA) tool
 
 Automatically withdraw + swap USDC from a Fluid/Morpho vault into multiple tokens with a custom ratio (e.g., 60% rETH, 40% AAVE) using Paraswap.
 
