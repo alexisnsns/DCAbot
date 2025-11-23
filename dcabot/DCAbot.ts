@@ -10,7 +10,7 @@ const optimize = async () => {
     const positions = await getUserFluidPositions();
 
     console.log(
-      "Current DeFi Positions (careful, price of the yield token is not the USD value):",
+      "Current Fluid tokens (careful, price of the yield token is not the USD value):",
       positions
     );
     await withdrawUSDCFromFluidMorpho(amount.toString(), chain);

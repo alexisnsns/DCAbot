@@ -23,19 +23,8 @@ export async function getUserFluidPositions() {
   // Convert units (USDC = 6 decimals)
   const balance = ethers.formatUnits(rawBalance, 6);
 
-  const result = {
-    chain: "ARBITRUM",
-    balance,
-  };
-
-  // If the user has nothing, return empty array
-  if (balance === "0.0") {
-    // console.log([]);
-    return [];
-  }
-
   // console.log([result]);
-  return [result];
+  return balance;
 }
 
 // getUserFluidPositions();

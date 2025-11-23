@@ -3,6 +3,7 @@ import { ethers } from "ethers";
 import {
   _USDC,
   _RETH,
+  _AAVE,
   PROXYTRANSFER,
   PUBLICKEY,
   ARBITRUM_CHAIN_ID,
@@ -17,47 +18,15 @@ const ABI = JSON.parse(
 const fetchApiUrl = "https://apiv5.paraswap.io/prices";
 const transactApiUrl = `https://apiv5.paraswap.io/transactions/42161`;
 
-// 1 USDC = "100000" (USDC has 6 decimals)
-// const srcValue = "100000";
-
 // USDC Contract
 const usdcContract = new ethers.Contract(_USDC.address, ABI, ARBITRUM_WALLET);
-
-// async function checkAllowance() {
-//   try {
-//     console.log("checking allowance:");
-//     const allowance = await usdcContract.allowance(PUBLICKEY, PROXYTRANSFER);
-//     console.log(`Allowance for spender from owner is: ${allowance}`);
-//   } catch (error) {
-//     console.error("Error fetching allowance:", error);
-//   }
-// }
-
-// async function setAllowance(amount: number) {
-//   const amountToApprove = ethers.parseUnits(amount.toString(), _USDC.decimals);
-
-//   console.log(
-//     `Setting allowance for ${PROXYTRANSFER} to spend ${amount} tokens...`
-//   );
-
-//   try {
-//     const tx = await usdcContract.approve(PROXYTRANSFER, amountToApprove);
-
-//     console.log(`Approval transaction sent: ${tx.hash}`);
-
-//     await tx.wait();
-//     console.log("Allowance set successfully.");
-//   } catch (error) {
-//     console.error("Error setting allowance:", error);
-//   }
-// }
 
 async function fetchPrice(amount: bigint) {
   const fetchParams = {
     srcToken: _USDC.address,
     srcDecimals: _USDC.decimals,
-    destToken: _RETH.address,
-    destDecimals: _RETH.decimals,
+    destToken: _AAVE.address,
+    destDecimals: _AAVE.decimals,
     amount: amount, // "100000"
     side: "SELL",
     network: ARBITRUM_CHAIN_ID,
@@ -77,7 +46,7 @@ async function fetchPrice(amount: bigint) {
     );
 
     console.log(
-      `Paraswap quote: ${srcAmountHuman} ${_USDC.symbol} → ${destAmountHuman} ${_RETH.symbol}`
+      `Paraswap quote: ${srcAmountHuman} ${_USDC.symbol} → ${destAmountHuman} ${_AAVE.symbol}`
     );
 
     console.log("Gas USD cost:", response.data.priceRoute.gasCostUSD);
@@ -134,7 +103,7 @@ async function buildTransaction(amount: string) {
   const diff = (destUSD - srcUSD) / srcUSD;
 
   console.log(
-    `Src: ${srcUSD}, Dest: ${destUSD}, final diff: ${diff.toFixed(6)} $`
+    `Src: ${srcUSD}, Dest: ${destUSD}, final diff: ${diff.toFixed(6)} %`
   );
   if (diff < -0.01) {
     console.log("❌ Price impact too high. Abort tx.");
@@ -147,8 +116,8 @@ async function buildTransaction(amount: string) {
   const txParams = {
     srcToken: _USDC.address,
     srcDecimals: _USDC.decimals,
-    destToken: _RETH.address,
-    destDecimals: _RETH.decimals,
+    destToken: _AAVE.address,
+    destDecimals: _AAVE.decimals,
     srcAmount: amountWei.toString(),
     priceRoute,
     slippage: 50,

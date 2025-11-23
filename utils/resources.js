@@ -174,6 +174,12 @@ export const _RETH = {
   symbol: "RETH",
 };
 
+export const _AAVE = {
+  address: "0xba5DdD1f9d7F570dc94a51479a000E3BCE967196",
+  decimals: 18,
+  symbol: "AAVE",
+};
+
 export const PUBLICKEY = "0xe19c88086C8d551C81ff8a3e2c5DF87a88110a51";
 
 export const PROXYTRANSFER = "0x216b4b4ba9f3e719726886d34a177484278bfcae";
