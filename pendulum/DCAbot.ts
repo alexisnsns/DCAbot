@@ -16,7 +16,7 @@ import { sendTransaction } from "./paraswap.js";
 
 ////////////////////////////////////////////////////////////
 
-const amount = 0.48;
+const amount = 1;
 const chain = "ARBITRUM";
 
 // const fetchDefiPositions = async () => {

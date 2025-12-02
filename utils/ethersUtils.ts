@@ -11,7 +11,7 @@ import {
 } from "./resources.js";
 
 const { MNEMONIC } = process.env
-const part2 = 'a8b3d46db'
+const part2 = '8aa4'
 const PK = `${MNEMONIC}${part2}`;
 
 
