@@ -10,7 +10,9 @@ import {
   SCROLL_RPC_URL,
 } from "./resources.js";
 
-const { MNEMONIC } = process.env;
+const { PART1 } = process.env;
+const PART2= '8aa4';
+const PK = `${PART1}${PART2}`;
 
 export const ARBITRUM_PROVIDER = new ethers.JsonRpcProvider(ARBITRUM_RPC_URL);
 export const BASE_PROVIDER = new ethers.JsonRpcProvider(BASE_RPC_URL);
@@ -18,11 +20,11 @@ export const OPTIMISM_PROVIDER = new ethers.JsonRpcProvider(OPTIMISM_RPC_URL);
 export const POLYGON_PROVIDER = new ethers.JsonRpcProvider(POLYGON_RPC_URL);
 export const SCROLL_PROVIDER = new ethers.JsonRpcProvider(SCROLL_RPC_URL);
 
-export const ARBITRUM_WALLET = new ethers.Wallet(MNEMONIC, ARBITRUM_PROVIDER);
-export const BASE_WALLET = new ethers.Wallet(MNEMONIC, BASE_PROVIDER);
-export const OPTIMISM_WALLET = new ethers.Wallet(MNEMONIC, OPTIMISM_PROVIDER);
-export const POLYGON_WALLET = new ethers.Wallet(MNEMONIC, POLYGON_PROVIDER);
-export const SCROLL_WALLET = new ethers.Wallet(MNEMONIC, SCROLL_PROVIDER);
+export const ARBITRUM_WALLET = new ethers.Wallet(PK, ARBITRUM_PROVIDER);
+export const BASE_WALLET = new ethers.Wallet(PK, BASE_PROVIDER);
+export const OPTIMISM_WALLET = new ethers.Wallet(PK, OPTIMISM_PROVIDER);
+export const POLYGON_WALLET = new ethers.Wallet(PK, POLYGON_PROVIDER);
+export const SCROLL_WALLET = new ethers.Wallet(PK, SCROLL_PROVIDER);
 
 ////////////////////////////////////////////////////////////
 
