@@ -7,7 +7,6 @@ import {
   _RETH,
   _AAVE,
   PROXYTRANSFER,
-  PUBLICKEY,
   ARBITRUM_CHAIN_ID,
 } from "../utils/resources.js";
 
@@ -90,23 +89,23 @@ async function fetchPrice(amount: bigint, destToken: Token) {
 // ----------------------------
 // 3. Build tx for a single token
 // ----------------------------
-async function buildTransaction(amount: string, destToken: Token) {
+async function buildTransaction(amount: string, destToken: Token, userAddress: string) {
   const amountWei = ethers.parseUnits(amount, _USDC.decimals);
 
   console.log("Amount to swap:", amountWei.toString());
 
   // 0. Check allowance
   const currentAllowance: bigint = await usdcContract.allowance(
-    PUBLICKEY,
+    userAddress,
     PROXYTRANSFER
   );
   console.log("Current allowance:", currentAllowance.toString());
 
   if (currentAllowance < amountWei) {
     console.log(
-      `Allowance too low. Need ${amountWei}, have ${currentAllowance}. Approving...`
+      `Allowance too low. Need ${amountWei}, have ${currentAllowance}. Approving 10x the amount...`
     );
-    const approveTx = await usdcContract.approve(PROXYTRANSFER, amountWei);
+    const approveTx = await usdcContract.approve(PROXYTRANSFER, amountWei * 10n);
     console.log("Approval tx:", approveTx.hash);
     await approveTx.wait();
     console.log("Approval confirmed.");
@@ -129,21 +128,21 @@ async function buildTransaction(amount: string, destToken: Token) {
   console.log(
     `Src: ${srcUSD}, Dest: ${destUSD}, final diff: ${diff.toFixed(6)}%`
   );
-  if (diff < -0.01) {
+  if (diff < -0.02) {
     console.log("❌ Price impact too high. Abort tx.");
     throw new Error("Price impact too high");
   }
 
   // 3. Build transaction
   const txParams = {
-    srcToken: _USDC.address,
+    srcToken: _USDC.address,  
     srcDecimals: _USDC.decimals,
     destToken: destToken.address,
     destDecimals: destToken.decimals,
     srcAmount: amountWei.toString(),
     priceRoute,
     slippage: 50, // 0.5% slippage
-    userAddress: PUBLICKEY,
+    userAddress: userAddress,
   };
 
   const block = await ARBITRUM_PROVIDER.getBlock("latest");
@@ -163,33 +162,29 @@ async function buildTransaction(amount: string, destToken: Token) {
 // ----------------------------
 // 4. Send tx for a single token
 // ----------------------------
-export async function sendTransaction(amount: string, destToken: Token) {
-  try {
-    const txParams = await buildTransaction(amount, destToken);
-    if (!txParams) {
-      console.log("No tx params. Aborting.");
-      return;
-    }
-
-    const feeData = await ARBITRUM_PROVIDER.getFeeData();
-
-    const txDetails = {
-      to: txParams.to,
-      data: txParams.data,
-      value: 0n,
-      gasLimit: BigInt(txParams.gas),
-      maxFeePerGas: feeData.maxFeePerGas ?? 0n,
-      maxPriorityFeePerGas: feeData.maxPriorityFeePerGas ?? 0n,
-    };
-
-    const txResponse = await ARBITRUM_WALLET.sendTransaction(txDetails);
-    console.log(`Transaction hash: ${txResponse.hash}`);
-
-    const receipt = await txResponse.wait();
-    console.log(`Confirmed in block: ${receipt.blockNumber}`);
-  } catch (error) {
-    console.error("Error sending tx:", error);
+export async function sendTransaction(amount: string, destToken: Token, userAddress: string) {
+  const txParams = await buildTransaction(amount, destToken, userAddress);
+  if (!txParams) {
+    console.log("No tx params. Aborting.");
+    throw new Error("No tx params returned from buildTransaction");
   }
+
+  const feeData = await ARBITRUM_PROVIDER.getFeeData();
+
+  const txDetails = {
+    to: txParams.to,
+    data: txParams.data,
+    value: 0n,
+    gasLimit: BigInt(txParams.gas),
+    maxFeePerGas: feeData.maxFeePerGas ?? 0n,
+    maxPriorityFeePerGas: feeData.maxPriorityFeePerGas ?? 0n,
+  };
+
+  const txResponse = await ARBITRUM_WALLET.sendTransaction(txDetails);
+  console.log(`Transaction hash: ${txResponse.hash}`);
+
+  const receipt = await txResponse.wait();
+  console.log(`Confirmed in block: ${receipt.blockNumber}`);
 }
 
 // ----------------------------
@@ -197,12 +192,18 @@ export async function sendTransaction(amount: string, destToken: Token) {
 // ----------------------------
 export async function swapUSDCByRatio(
   totalAmount: string,
-  allocations: TokenAllocation[]
+  allocations: TokenAllocation[],
+  userAddress: string
 ) {
   const slices = computeAllocations(totalAmount, allocations);
 
   for (const slice of slices) {
     console.log(`\nSwapping ${slice.amount} USDC → ${slice.token.symbol}`);
-    await sendTransaction(slice.amount, slice.token);
+    try {
+      await sendTransaction(slice.amount, slice.token, userAddress);
+    } catch (error) {
+      console.error(`Transaction failed for ${slice.token.symbol}:`, error);
+      throw error; // Re-throw to stop processing remaining transactions
+    }
   }
 }

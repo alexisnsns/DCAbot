@@ -2,11 +2,11 @@
   "name": "dcabot",
   "private": true,
   "scripts": {
-    "dca": "node --import ./register-ts-node.mjs dcabot/DCAbot.ts",
-    "positions": "node --import ./register-ts-node.mjs dcabot/defiPositions/fluidPositions.ts",
-    "usdcbalance": "node --import ./register-ts-node.mjs dcabot/utils/usdcBalancesCheck.ts",
-    "withdraw": "node --import ./register-ts-node.mjs dcabot/withdrawFluidMorpho.ts",
-    "paraswap": "node --import ./register-ts-node.mjs dcabot/paraswap.ts"
+    "dca": "node --loader ts-node/esm dcabot/DCAbot.ts",
+    "positions": "node --loader ts-node/esm dcabot/defiPositions/fluidPositions.ts",
+    "usdcbalance": "node --loader ts-node/esm dcabot/utils/usdcBalancesCheck.ts",
+    "withdraw": "node --loader ts-node/esm dcabot/withdrawFluidMorpho.ts",
+    "paraswap": "node --loader ts-node/esm dcabot/paraswap.ts"
   },
   "dependencies": {
     "axios": "^1.8.3",
